@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesKOGagnantPhoneNetwork;
 use Illuminate\Foundation\Http\FormRequest;
 use OpenApi\Attributes as OA;
 
@@ -22,6 +23,8 @@ use OpenApi\Attributes as OA;
 )]
 class SubmitKOGagnantRequest extends FormRequest
 {
+    use ValidatesKOGagnantPhoneNetwork;
+
     public function authorize(): bool
     {
         return true;
@@ -43,20 +46,6 @@ class SubmitKOGagnantRequest extends FormRequest
 
     public function withValidator($validator): void
     {
-        $validator->after(function ($validator): void {
-            $phoneNumber = (string) $this->input('phoneNumber');
-            $reseau = (string) $this->input('reseau');
-
-            $expectedPrefix = match ($reseau) {
-                'orange' => '07',
-                'mtn' => '05',
-                'moov' => '01',
-                default => null,
-            };
-
-            if ($expectedPrefix && ! str_starts_with($phoneNumber, $expectedPrefix)) {
-                $validator->errors()->add('phoneNumber', 'Le numero de telephone ne correspond pas au reseau choisi.');
-            }
-        });
+        $this->addKOGagnantPhoneNetworkValidation($validator);
     }
 }

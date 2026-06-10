@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ClaimKOGagnantPrizeRequest;
+use App\Http\Requests\CheckKOGagnantRequest;
 use App\Http\Requests\SubmitKOGagnantRequest;
 use App\Services\KOGagnantService;
 use Illuminate\Http\JsonResponse;
@@ -37,6 +38,16 @@ use OpenApi\Attributes as OA;
     required: ['ok'],
     properties: [
         new OA\Property(property: 'ok', type: 'boolean', example: true),
+    ]
+)]
+#[OA\Schema(
+    schema: 'CheckKOGagnantResponse',
+    type: 'object',
+    required: ['ok', 'alreadyPlayed', 'message'],
+    properties: [
+        new OA\Property(property: 'ok', type: 'boolean', example: true),
+        new OA\Property(property: 'alreadyPlayed', type: 'boolean', example: false),
+        new OA\Property(property: 'message', type: 'string', example: 'Participation autorisee.'),
     ]
 )]
 class KOGagnantController extends Controller
@@ -77,6 +88,38 @@ class KOGagnantController extends Controller
         $result = $this->service->submit($request->validated());
 
         return response()->json($result);
+    }
+
+    #[OA\Post(
+        path: '/api/ko-gagnant/check',
+        tags: ['K.O. Gagnant'],
+        summary: 'Verifier si un numero a deja participe',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(ref: '#/components/schemas/CheckKOGagnantRequest')
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Verification effectuee',
+                content: new OA\JsonContent(ref: '#/components/schemas/CheckKOGagnantResponse')
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Erreur de validation',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string', example: 'Le numero de telephone ne correspond pas au reseau choisi.'),
+                        new OA\Property(property: 'errors', type: 'object'),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function check(CheckKOGagnantRequest $request): JsonResponse
+    {
+        return response()->json($this->service->checkParticipation($request->validated()));
     }
 
     #[OA\Post(

@@ -142,6 +142,19 @@ class KOGagnantService
         });
     }
 
+    public function checkParticipation(array $data): array
+    {
+        $alreadyPlayed = KOGagnantParticipation::query()
+            ->where('phone_number', $data['phoneNumber'])
+            ->exists();
+
+        return [
+            'ok' => true,
+            'alreadyPlayed' => $alreadyPlayed,
+            'message' => $alreadyPlayed ? 'Ce numero a deja participe.' : 'Participation autorisee.',
+        ];
+    }
+
     private function determinePrize(int $taps): ?array
     {
         if ($taps < self::MIN_TAPS_TO_WIN) {

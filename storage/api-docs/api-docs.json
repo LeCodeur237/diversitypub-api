@@ -55,6 +55,56 @@
                 }
             }
         },
+        "/api/ko-gagnant/check": {
+            "post": {
+                "tags": [
+                    "K.O. Gagnant"
+                ],
+                "summary": "Verifier si un numero a deja participe",
+                "operationId": "4af5ace471fccb2a3ffc2bee85f65c4e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckKOGagnantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification effectuee",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckKOGagnantResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Erreur de validation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Le numero de telephone ne correspond pas au reseau choisi."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/ko-gagnant/claim": {
             "post": {
                 "tags": [
@@ -194,6 +244,50 @@
                     "ok": {
                         "type": "boolean",
                         "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "CheckKOGagnantResponse": {
+                "required": [
+                    "ok",
+                    "alreadyPlayed",
+                    "message"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "alreadyPlayed": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Participation autorisee."
+                    }
+                },
+                "type": "object"
+            },
+            "CheckKOGagnantRequest": {
+                "required": [
+                    "phoneNumber",
+                    "reseau"
+                ],
+                "properties": {
+                    "phoneNumber": {
+                        "type": "string",
+                        "example": "0700000000"
+                    },
+                    "reseau": {
+                        "type": "string",
+                        "example": "orange",
+                        "enum": [
+                            "orange",
+                            "mtn",
+                            "moov"
+                        ]
                     }
                 },
                 "type": "object"

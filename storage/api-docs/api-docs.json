@@ -1,0 +1,278 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "K.O. Gagnant API",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/ko-gagnant/submit": {
+            "post": {
+                "tags": [
+                    "K.O. Gagnant"
+                ],
+                "summary": "Enregistrer une participation au jeu",
+                "operationId": "b41fd07c7db3d3666aecdad98618de7d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubmitKOGagnantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Participation enregistree",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubmitKOGagnantResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Erreur de validation ou participation invalide",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Le numero de telephone ne correspond pas au reseau choisi."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ko-gagnant/claim": {
+            "post": {
+                "tags": [
+                    "K.O. Gagnant"
+                ],
+                "summary": "Reclamer un lot Wave",
+                "operationId": "877efb9bb2598f4826d065e967604ae9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClaimKOGagnantRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reclamation reussie",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClaimKOGagnantResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Participation introuvable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No query results for model [App\\Models\\KOGagnantParticipation] 123"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Participation non eligible ou lot deja reclame",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Cette participation n'est pas gagnante."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Prize": {
+                "required": [
+                    "label",
+                    "type",
+                    "icon"
+                ],
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "example": "Depot Wave de 100 Fcfa"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "wave"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "example": "bi-wallet2"
+                    }
+                },
+                "type": "object"
+            },
+            "SubmitKOGagnantResponse": {
+                "required": [
+                    "ok",
+                    "alreadyPlayed",
+                    "participationId",
+                    "won",
+                    "message"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "alreadyPlayed": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "participationId": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "won": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "prize": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/Prize"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Participation gagnante."
+                    }
+                },
+                "type": "object"
+            },
+            "ClaimKOGagnantResponse": {
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "ClaimKOGagnantRequest": {
+                "required": [
+                    "participationId",
+                    "waveNumber"
+                ],
+                "properties": {
+                    "participationId": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "waveNumber": {
+                        "type": "string",
+                        "example": "0700000000"
+                    }
+                },
+                "type": "object"
+            },
+            "SubmitKOGagnantRequest": {
+                "required": [
+                    "firstName",
+                    "lastName",
+                    "commune",
+                    "phoneNumber",
+                    "reseau",
+                    "taps",
+                    "acceptedTerms"
+                ],
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "example": "Jean"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "example": "Dupont"
+                    },
+                    "commune": {
+                        "type": "string",
+                        "example": "Cocody"
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "example": "0701020304"
+                    },
+                    "reseau": {
+                        "type": "string",
+                        "example": "orange",
+                        "enum": [
+                            "orange",
+                            "mtn",
+                            "moov"
+                        ]
+                    },
+                    "taps": {
+                        "type": "integer",
+                        "example": 75
+                    },
+                    "acceptedTerms": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "durationMs": {
+                        "type": "integer",
+                        "example": 10000,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "K.O. Gagnant",
+            "description": "K.O. Gagnant"
+        }
+    ]
+}

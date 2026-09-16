@@ -17,7 +17,7 @@ class SubmitRouletteParticipationRequest extends FormRequest
             'deviceId' => ['required', 'string', 'size:36', 'regex:/^[a-f0-9-]{36}$/i'],
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
-            'age' => ['required', 'integer', 'between:25,100'],
+            'age' => ['required', 'integer', 'between:18,100'],
             'phone' => ['required', 'string', 'max:30'],
             'won' => ['required', 'boolean'],
             'prize' => ['nullable', 'string', 'max:255'],

@@ -6,6 +6,7 @@ use App\Http\Requests\SubmitRouletteParticipationRequest;
 use App\Models\RouletteParticipation;
 use App\Services\RouletteParticipationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class RouletteParticipationController extends Controller
 {
@@ -13,12 +14,22 @@ class RouletteParticipationController extends Controller
     {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'order' => ['sometimes', 'in:asc,desc'],
+        ]);
+
+        $order = $validated['order'] ?? 'desc';
+        $perPage = $validated['per_page'] ?? 20;
+
         $participations = RouletteParticipation::query()
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($participation) => [
+            ->orderBy('created_at', $order)
+            ->orderBy('id', $order)
+            ->paginate($perPage)
+            ->through(fn ($participation) => [
                 'id' => $participation->id,
                 'game' => $participation->game,
                 'first_name' => $participation->first_name,

@@ -9,6 +9,7 @@ Route::get('/roulette/participations', [RouletteParticipationController::class, 
 Route::post('/roulette/participate', [RouletteParticipationController::class, 'submit']);
 
 Route::prefix('penalty')->group(function () {
+    Route::get('/participations', [PenaltyGameController::class, 'index']);
     Route::post('/start', [PenaltyGameController::class, 'start']);
     Route::post('/shoot', [PenaltyGameController::class, 'shoot']);
 });

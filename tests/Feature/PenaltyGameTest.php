@@ -90,4 +90,31 @@ class PenaltyGameTest extends TestCase
             ->assertJsonPath('outcome', 'missed')
             ->assertJsonPath('message', 'Tir hors cadre.');
     }
+
+    public function test_admin_can_list_paginated_penalty_players(): void
+    {
+        PenaltyParticipation::create([
+            'play_token' => '11111111-1111-4111-8111-111111111111',
+            'first_name' => 'Awa',
+            'last_name' => 'Kone',
+            'phone_number' => '0701020304',
+            'team' => 'ivory-coast',
+            'attempts' => 3,
+            'goals' => 2,
+            'completed' => true,
+            'prize_label' => 'Casquette',
+            'accepted_terms' => true,
+        ]);
+
+        $response = $this->getJson('/api/penalty/participations');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.first_name', 'Awa')
+            ->assertJsonPath('data.0.team', 'ivory-coast')
+            ->assertJsonPath('data.0.goals', 2)
+            ->assertJsonPath('data.0.won', true)
+            ->assertJsonPath('data.0.prize_label', 'Casquette')
+            ->assertJsonPath('total', 1);
+    }
 }

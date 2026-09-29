@@ -9,6 +9,8 @@ class PenaltyParticipation extends Model
     protected $attributes = [
         'attempts' => 0,
         'goals' => 0,
+        'keeper_x' => 50,
+        'keeper_y' => 40,
         'completed' => false,
     ];
 
@@ -20,6 +22,8 @@ class PenaltyParticipation extends Model
         'team',
         'attempts',
         'goals',
+        'keeper_x',
+        'keeper_y',
         'completed',
         'prize_label',
         'accepted_terms',
@@ -28,6 +32,8 @@ class PenaltyParticipation extends Model
     protected $casts = [
         'attempts' => 'integer',
         'goals' => 'integer',
+        'keeper_x' => 'float',
+        'keeper_y' => 'float',
         'completed' => 'boolean',
         'accepted_terms' => 'boolean',
     ];

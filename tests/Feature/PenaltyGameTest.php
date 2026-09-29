@@ -27,21 +27,25 @@ class PenaltyGameTest extends TestCase
 
         $participationId = $start->json('participationId');
         $playToken = $start->json('playToken');
-        for ($attempt = 1; $attempt <= 3; $attempt++) {
+        $targets = [50, 20, 50, 80, 50];
+        foreach ($targets as $index => $targetX) {
+            $attempt = $index + 1;
             $shot = $this->postJson('/api/penalty/shoot', [
                 'playToken' => $playToken,
-                'targetX' => 25 * $attempt,
+                'targetX' => $targetX,
                 'targetY' => 20,
             ]);
 
             $shot->assertOk()
                 ->assertJsonPath('attempts', $attempt)
-                ->assertJsonPath('completed', $attempt === 3);
+                ->assertJsonPath('completed', $attempt === 5);
+            $this->assertIsNumeric($shot->json('keeperY'));
         }
 
         $participation = PenaltyParticipation::findOrFail($participationId);
-        $this->assertSame(3, $participation->attempts);
-        $this->assertSame($participation->goals >= 2, $participation->prize_label !== null);
+        $this->assertSame(5, $participation->attempts);
+        $this->assertSame(3, $participation->goals);
+        $this->assertNotNull($participation->prize_label);
 
         $this->postJson('/api/penalty/shoot', [
             'playToken' => $playToken,
@@ -56,7 +60,7 @@ class PenaltyGameTest extends TestCase
             'firstName' => 'Ama',
             'lastName' => 'Mensah',
             'phoneNumber' => '0501020304',
-            'team' => 'ghana',
+            'team' => 'cameroon',
             'acceptedTerms' => true,
         ];
 
@@ -77,7 +81,7 @@ class PenaltyGameTest extends TestCase
             'firstName' => 'Kofi',
             'lastName' => 'Asante',
             'phoneNumber' => '0101020304',
-            'team' => 'ghana',
+            'team' => 'cameroon',
             'acceptedTerms' => true,
         ]);
 
@@ -91,6 +95,29 @@ class PenaltyGameTest extends TestCase
             ->assertJsonPath('message', 'Tir hors cadre.');
     }
 
+    public function test_high_central_shot_is_saved_by_a_high_keeper_dive(): void
+    {
+        $start = $this->postJson('/api/penalty/start', [
+            'firstName' => 'Mireille',
+            'lastName' => 'Fomo',
+            'phoneNumber' => '0702030405',
+            'team' => 'ivory-coast',
+            'acceptedTerms' => true,
+        ]);
+
+        $this->postJson('/api/penalty/shoot', [
+            'playToken' => $start->json('playToken'),
+            'targetX' => 50,
+            'targetY' => 20,
+        ])->assertOk()
+            ->assertJsonPath('goal', false)
+            ->assertJsonPath('outcome', 'saved')
+            ->assertJsonPath('keeperX', 50)
+            ->assertJsonPath('keeperY', 20)
+            ->assertJsonPath('keeperMotion', 1)
+            ->assertJsonPath('keeperAction', 'save');
+    }
+
     public function test_admin_can_list_paginated_penalty_players(): void
     {
         PenaltyParticipation::create([
@@ -99,8 +126,8 @@ class PenaltyGameTest extends TestCase
             'last_name' => 'Kone',
             'phone_number' => '0701020304',
             'team' => 'ivory-coast',
-            'attempts' => 3,
-            'goals' => 2,
+            'attempts' => 5,
+            'goals' => 3,
             'completed' => true,
             'prize_label' => 'Casquette',
             'accepted_terms' => true,
@@ -112,7 +139,7 @@ class PenaltyGameTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.first_name', 'Awa')
             ->assertJsonPath('data.0.team', 'ivory-coast')
-            ->assertJsonPath('data.0.goals', 2)
+            ->assertJsonPath('data.0.goals', 3)
             ->assertJsonPath('data.0.won', true)
             ->assertJsonPath('data.0.prize_label', 'Casquette')
             ->assertJsonPath('total', 1);

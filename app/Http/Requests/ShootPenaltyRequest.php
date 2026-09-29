@@ -17,6 +17,8 @@ class ShootPenaltyRequest extends FormRequest
             'playToken' => ['required', 'uuid', 'exists:penalty_participations,play_token'],
             'targetX' => ['required', 'numeric', 'between:0,100'],
             'targetY' => ['required', 'numeric', 'between:0,100'],
+            'pitchWidth' => ['sometimes', 'numeric', 'between:280,1000'],
+            'pitchHeight' => ['sometimes', 'numeric', 'between:300,900'],
         ];
     }
 }

@@ -17,7 +17,7 @@ class StartPenaltyGameRequest extends FormRequest
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'phoneNumber' => ['required', 'string', 'regex:/^(01|05|07)[0-9]{8}$/'],
-            'team' => ['required', 'string', 'in:ivory-coast,ghana'],
+            'team' => ['required', 'string', 'in:ivory-coast,cameroon'],
             'acceptedTerms' => ['required', 'accepted'],
         ];
     }

@@ -45,7 +45,7 @@ class PenaltyGameController extends Controller
                 'attempts' => $participation->attempts,
                 'goals' => $participation->goals,
                 'completed' => $participation->completed,
-                'won' => $participation->goals >= 2,
+                'won' => $participation->completed && $participation->goals >= 2,
                 'prize_label' => $participation->prize_label,
                 'created_at' => $participation->created_at?->toISOString(),
             ]);

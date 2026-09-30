@@ -54,19 +54,19 @@ class PenaltyGameService
 
             $targetX = (float) $data['targetX'];
             $targetY = (float) $data['targetY'];
-            $insideGoal = $targetX >= 13 && $targetX <= 88
-                && $targetY >= 13 && $targetY <= 49;
+            $insideGoal = $targetX >= 11 && $targetX <= 89
+                && $targetY >= 11 && $targetY <= 49;
 
             $keeperX = (float) $participation->keeper_x;
             $keeperY = (float) $participation->keeper_y;
-            $reachX = 13 + min(6, $participation->goals * 2);
-            $reachY = 10 + min(4, $participation->goals);
+            $reachX = 8;
+            $reachY = 6;
             $pitchWidth = (float) ($data['pitchWidth'] ?? 700);
             $pitchHeight = (float) ($data['pitchHeight'] ?? 500);
             $keeperSize = min(144, $pitchWidth * 0.26, $pitchHeight * 0.26);
             $ballSize = min(44, $pitchWidth * 0.07);
-            $hitRadiusX = (($keeperSize * 1.06 + $ballSize) / 2 + 21) / $pitchWidth * 100;
-            $hitRadiusY = (($keeperSize * 1.06 + $ballSize) / 2 + 11) / $pitchHeight * 100;
+            $hitRadiusX = (($keeperSize * 0.45 + $ballSize * 0.65) / 2 + 5) / $pitchWidth * 100;
+            $hitRadiusY = (($keeperSize * 0.5 + $ballSize * 0.65) / 2 + 4) / $pitchHeight * 100;
             $keeperAction = 'reset';
             $ballX = $targetX;
             $ballY = $targetY;

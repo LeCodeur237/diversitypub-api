@@ -21,9 +21,9 @@ class PenaltyMotion
     {
         return match (min(3, max(0, $goals))) {
             0 => 4200,
-            1 => 3100,
-            2 => 2600,
-            default => 2300,
+            1 => 2500,
+            2 => 1800,
+            default => 1500,
         };
     }
 

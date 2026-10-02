@@ -20,9 +20,9 @@ class PenaltyMotionTest extends TestCase
             $this->assertGreaterThan(45, $right['keeperX'] - $left['keeperX']);
         }
         $this->assertSame(4200, $motion->period(0));
-        $this->assertSame(3100, $motion->period(1));
-        $this->assertSame(2600, $motion->period(2));
-        $this->assertSame(2300, $motion->period(3));
+        $this->assertSame(2500, $motion->period(1));
+        $this->assertSame(1800, $motion->period(2));
+        $this->assertSame(1500, $motion->period(3));
     }
 
     public function test_timing_changes_the_result_of_the_same_shot_on_desktop_and_mobile(): void

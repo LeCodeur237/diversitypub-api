@@ -6,6 +6,7 @@ use App\Http\Controllers\RouletteParticipationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/roulette/participations', [RouletteParticipationController::class, 'index']);
+Route::get('/roulette/status', [RouletteParticipationController::class, 'status']);
 Route::post('/roulette/participate', [RouletteParticipationController::class, 'submit']);
 
 Route::prefix('penalty')->group(function () {

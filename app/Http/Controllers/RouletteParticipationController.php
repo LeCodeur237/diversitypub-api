@@ -49,4 +49,9 @@ class RouletteParticipationController extends Controller
     {
         return response()->json($this->service->submit($request->validated()));
     }
+
+    public function status(): JsonResponse
+    {
+        return response()->json($this->service->status());
+    }
 }

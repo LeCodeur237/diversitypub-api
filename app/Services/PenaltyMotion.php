@@ -19,7 +19,12 @@ class PenaltyMotion
 
     public function period(int $goals): int
     {
-        return (int) round(4200 / (1 + min(3, $goals) * .12));
+        return match (min(3, max(0, $goals))) {
+            0 => 4200,
+            1 => 3100,
+            2 => 2600,
+            default => 2300,
+        };
     }
 
     public function simulate(array $data, int $goals, int $attempt): array

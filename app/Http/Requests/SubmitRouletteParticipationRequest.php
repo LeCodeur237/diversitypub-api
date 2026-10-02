@@ -19,8 +19,6 @@ class SubmitRouletteParticipationRequest extends FormRequest
             'lastName' => ['required', 'string', 'max:255'],
             'age' => ['required', 'integer', 'between:18,100'],
             'phone' => ['required', 'string', 'max:30'],
-            'won' => ['required', 'boolean'],
-            'prize' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

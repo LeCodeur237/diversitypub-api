@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\PenaltyParticipation;
 use Illuminate\Database\QueryException;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -15,27 +17,45 @@ class PenaltyGameService
     public function start(array $data): array
     {
         try {
-            $participation = PenaltyParticipation::create([
-                'play_token' => (string) Str::uuid(),
-                'first_name' => $data['firstName'],
-                'last_name' => $data['lastName'],
-                'phone_number' => $data['phoneNumber'],
-                'team' => $data['team'],
-                'accepted_terms' => (bool) $data['acceptedTerms'],
-            ]);
+            return DB::transaction(function () use ($data): array {
+                $existing = PenaltyParticipation::query()
+                    ->where('phone_number', $data['phoneNumber'])
+                    ->orWhere('device_id', $data['deviceId'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing) {
+                    return $this->format($existing, true);
+                }
+
+                $participation = PenaltyParticipation::create([
+                    'play_token' => (string) Str::uuid(),
+                    'device_id' => $data['deviceId'],
+                    'first_name' => $data['firstName'],
+                    'last_name' => $data['lastName'],
+                    'phone_number' => $data['phoneNumber'],
+                    'team' => $data['team'],
+                    'accepted_terms' => (bool) $data['acceptedTerms'],
+                ]);
+
+                return $this->format($participation, false);
+            });
         } catch (QueryException $exception) {
-            if ($exception->getCode() !== '23000') {
+            if (! in_array($exception->getCode(), ['23000', '23505', '19'], true)) {
                 throw $exception;
             }
 
             $existing = PenaltyParticipation::query()
                 ->where('phone_number', $data['phoneNumber'])
-                ->firstOrFail();
+                ->orWhere('device_id', $data['deviceId'])
+                ->first();
+
+            if (! $existing) {
+                throw $exception;
+            }
 
             return $this->format($existing, true);
         }
-
-        return $this->format($participation, false);
     }
 
     public function shoot(array $data): array
@@ -52,65 +72,11 @@ class PenaltyGameService
                 ]);
             }
 
-            $targetX = (float) $data['targetX'];
-            $targetY = (float) $data['targetY'];
-            $insideGoal = $targetX >= 11 && $targetX <= 89
-                && $targetY >= 11 && $targetY <= 49;
-
-            $keeperX = (float) $participation->keeper_x;
-            $keeperY = (float) $participation->keeper_y;
-            $reachX = 8;
-            $reachY = 6;
-            $pitchWidth = (float) ($data['pitchWidth'] ?? 700);
-            $pitchHeight = (float) ($data['pitchHeight'] ?? 500);
-            $keeperSize = min(144, $pitchWidth * 0.26, $pitchHeight * 0.26);
-            $ballSize = min(44, $pitchWidth * 0.07);
-            $hitRadiusX = (($keeperSize * 0.45 + $ballSize * 0.65) / 2 + 5) / $pitchWidth * 100;
-            $hitRadiusY = (($keeperSize * 0.5 + $ballSize * 0.65) / 2 + 4) / $pitchHeight * 100;
-            $keeperAction = 'reset';
-            $ballX = $targetX;
-            $ballY = $targetY;
-
-            $pathX = $targetX - 50;
-            $pathY = $targetY - 82;
-            $keeperEndX = $keeperX;
-            $keeperEndY = $keeperY;
-
-            if ($insideGoal) {
-                $diveX = $targetX - $keeperX;
-                $diveY = $targetY - $keeperY;
-                $diveDistance = sqrt(($diveX / $reachX) ** 2 + ($diveY / $reachY) ** 2);
-                $keeperEndX += $diveDistance > 1 ? $diveX / $diveDistance : $diveX;
-                $keeperEndY += $diveDistance > 1 ? $diveY / $diveDistance : $diveY;
-            }
-
-            $relativeStartX = (50 - $keeperX) / $hitRadiusX;
-            $relativeStartY = (82 - $keeperY) / $hitRadiusY;
-            $relativePathX = ($pathX - ($keeperEndX - $keeperX)) / $hitRadiusX;
-            $relativePathY = ($pathY - ($keeperEndY - $keeperY)) / $hitRadiusY;
-            $relativeLength = ($relativePathX * $relativePathX) + ($relativePathY * $relativePathY);
-            $pathProgress = $relativeLength > 0
-                ? max(0, min(1, -(($relativeStartX * $relativePathX) + ($relativeStartY * $relativePathY)) / $relativeLength))
-                : 0;
-            $pathHitsKeeper = (($relativeStartX + ($pathProgress * $relativePathX)) ** 2)
-                + (($relativeStartY + ($pathProgress * $relativePathY)) ** 2) <= 1;
-            $saved = $pathHitsKeeper;
-            $goal = $insideGoal && ! $saved;
-
-            if ($saved) {
-                $keeperX += $pathProgress * ($keeperEndX - $keeperX);
-                $keeperY += $pathProgress * ($keeperEndY - $keeperY);
-                $ballX = 50 + ($pathProgress * $pathX);
-                $ballY = 82 + ($pathProgress * $pathY);
-                $keeperAction = 'save';
-            } elseif ($goal) {
-                $keeperX = $keeperEndX;
-                $keeperY = $keeperEndY;
-                $keeperAction = 'dive';
-            }
-            $outcome = $goal ? 'goal' : ($saved ? 'saved' : 'missed');
-            $shotKeeperX = $keeperX;
-            $shotKeeperY = $keeperY;
+            $this->validateRound($participation, $data);
+            $motion = (new PenaltyMotion)->simulate($data, $participation->goals, $participation->attempts);
+            $outcome = $motion['outcome'];
+            $goal = $outcome === 'goal';
+            $lastFrame = $motion['trajectory'][array_key_last($motion['trajectory'])];
             $attempts = $participation->attempts + 1;
             $goals = $participation->goals + ($goal ? 1 : 0);
             $completed = $attempts === self::MAX_ATTEMPTS;
@@ -134,12 +100,14 @@ class PenaltyGameService
                 'completed' => $completed,
                 'won' => $prize !== null,
                 'prize' => $prize,
-                'keeperX' => $shotKeeperX,
-                'keeperY' => $shotKeeperY,
-                'ballX' => $ballX,
-                'ballY' => $ballY,
+                'keeperX' => $lastFrame['keeperX'],
+                'keeperY' => $lastFrame['keeperY'],
+                'ballX' => $lastFrame['ballX'],
+                'ballY' => $lastFrame['ballY'],
+                'trajectory' => $motion['trajectory'],
+                'round' => $completed ? null : $this->round($participation),
                 'keeperMotion' => $goal ? round(1 + min(0.35, $goals * 0.08), 2) : 1,
-                'keeperAction' => $keeperAction,
+                'keeperAction' => $outcome === 'saved' ? 'save' : 'dive',
                 'message' => match ($outcome) {
                     'goal' => 'But !',
                     'saved' => 'Arret du gardien.',
@@ -158,15 +126,42 @@ class PenaltyGameService
         return null;
     }
 
+    private function round(PenaltyParticipation $participation): array
+    {
+        return [
+            'token' => Crypt::encryptString(json_encode([
+                'id' => $participation->id,
+                'attempt' => $participation->attempts,
+                'issuedAt' => now()->getTimestampMs(),
+            ], JSON_THROW_ON_ERROR)),
+            'periodMs' => (new PenaltyMotion)->period($participation->goals),
+            'direction' => $participation->attempts % 2 === 0 ? 1 : -1,
+        ];
+    }
+
+    private function validateRound(PenaltyParticipation $participation, array $data): void
+    {
+        try {
+            $round = json_decode(Crypt::decryptString($data['roundToken']), true, 512, JSON_THROW_ON_ERROR);
+        } catch (DecryptException|\JsonException $exception) {
+            throw ValidationException::withMessages(['roundToken' => 'Ce tir est invalide.']);
+        }
+
+        // Bind a shot to one participant and attempt; never accept an arbitrary keeper position.
+        if ($round['id'] !== $participation->id || $round['attempt'] !== $participation->attempts
+            || $data['patrolElapsedMs'] > now()->getTimestampMs() - $round['issuedAt'] + 250) {
+            throw ValidationException::withMessages(['roundToken' => 'Ce tir a deja ete joue ou son horodatage est invalide.']);
+        }
+    }
+
     private function format(PenaltyParticipation $participation, bool $alreadyPlayed): array
     {
-        $participation->forceFill(['keeper_x' => 50, 'keeper_y' => 40])->save();
-
         return [
             'ok' => true,
             'alreadyPlayed' => $alreadyPlayed,
             'participationId' => $participation->id,
-            'playToken' => $participation->play_token,
+            'playToken' => $alreadyPlayed ? null : $participation->play_token,
+            'round' => $alreadyPlayed ? null : $this->round($participation),
             'team' => $participation->team,
             'attempts' => $participation->attempts,
             'goals' => $participation->goals,
@@ -175,7 +170,9 @@ class PenaltyGameService
             'completed' => $participation->completed,
             'won' => $participation->prize_label !== null,
             'prize' => $participation->prize_label,
-            'message' => $alreadyPlayed ? 'Ce numero a deja participe.' : 'La seance peut commencer.',
+            'message' => $alreadyPlayed
+                ? 'Ce numéro ou cet appareil a déjà participé.'
+                : 'La séance peut commencer.',
         ];
     }
 }

@@ -17,6 +17,7 @@ class PenaltyParticipation extends Model
     protected $fillable = [
         'first_name',
         'play_token',
+        'device_id',
         'last_name',
         'phone_number',
         'team',
